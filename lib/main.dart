@@ -1,9 +1,10 @@
+
 import 'package:avatar_glow/avatar_glow.dart';
 import 'package:flutter/material.dart';
 import 'package:highlight_text/highlight_text.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:video_player/video_player.dart';
-
+import 'package:translator/translator.dart';
 void main() {
   runApp(MyApp());
 }
@@ -30,7 +31,8 @@ class SpeechScreen extends StatefulWidget {
 class _SpeechScreenState extends State<SpeechScreen> {
   VideoPlayerController? _controller;
   late Future<void> _initializeVideoPlayerFuture;
-
+  GoogleTranslator translator = GoogleTranslator();
+  String language="English";
   @override
   void initState() {
     super.initState();
@@ -84,10 +86,11 @@ class _SpeechScreenState extends State<SpeechScreen> {
 
   stt.SpeechToText _speech=stt.SpeechToText();
   bool _isListening = false;
-  String _text = 'P';
+  String _text = 'Please start',written_text="Please start";
 
 
   void setUpListener(String a){
+    if(Speech)return;
     print(a);
     a=a.replaceAll(" ", "");
     _controller?.dispose();
@@ -112,6 +115,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
   bool Speech=true;
   @override
   Widget build(BuildContext context) {
+    List<String> items = ["English", "Hindi","Arabic"];
     if(Speech){
     return Scaffold(
       // appBar: AppBar(
@@ -145,13 +149,37 @@ class _SpeechScreenState extends State<SpeechScreen> {
             padding: EdgeInsets.fromLTRB(0, 70, 0, 0),
             child: Column(
               children: [
-                Switch(
-                  value: Speech,
-                  onChanged: (bool newValue) {
-                    setState(() {
-                      Speech = newValue;
-                    });
-                  },
+                Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Switch(
+                        value: Speech,
+                        onChanged: (bool newValue) {
+                          setState(() {
+                            Speech = newValue;
+                          });
+                        },
+                      ),
+                      DropdownButton<String>(
+                        value: language,
+                        onChanged: (newValue) {
+                          setState(() {
+                            language = newValue!;
+                          });
+                          _translate(_text);
+                        },
+                        items: items.map<DropdownMenuItem<String>>((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        style: TextStyle(color: Colors.white),
+                        dropdownColor: Colors.black,
+                      ),
+                    ],
+                  ),
                 )
                 ,
                 SingleChildScrollView(
@@ -162,7 +190,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
                     // child: Transform(
                     //   transform: Matrix4.rotationY(3.14159),alignment:Alignment.center,
                       child: TextHighlight(
-                        text: _text,
+                        text: written_text,
                         words: _highlights,
                         textStyle: const TextStyle(
                           fontSize: 32.0,
@@ -213,13 +241,37 @@ class _SpeechScreenState extends State<SpeechScreen> {
             child: Container(
               child: Column(
                 children: [
-                  Switch(
-                    value: Speech,
-                    onChanged: (bool newValue) {
-                      setState(() {
-                        Speech = newValue;
-                      });
-                    },
+                  Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Switch(
+                          value: Speech,
+                          onChanged: (bool newValue) {
+                            setState(() {
+                              Speech = newValue;
+                            });
+                          },
+                        ),
+                        DropdownButton<String>(
+                          value: language,
+                          onChanged: (newValue) {
+                            setState(() {
+                              language = newValue!;
+                              _translate(_text);
+                            });
+                          },
+                          items: items.map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                          style: TextStyle(color: Colors.white),
+                          dropdownColor: Colors.black,
+                        ),
+                      ],
+                    ),
                   )
                   ,
                   Container(constraints: BoxConstraints(
@@ -233,7 +285,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
                       // child: Transform(
                       //   transform: Matrix4.rotationY(3.14159),alignment:Alignment.center,
                       child: TextHighlight(
-                        text: _text,
+                        text: written_text,
                         words: _highlights,
                         textStyle: const TextStyle(
                           fontSize: 32.0,
@@ -267,6 +319,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
             if(_controller==null){
               setUpListener(_text);
             }
+            _translate(_text);
           }),
         );
       }
@@ -274,6 +327,19 @@ class _SpeechScreenState extends State<SpeechScreen> {
     }
     else{
       _speech.stop();
+    }
+  }
+  Future<void> _translate(String textToTranslate) async {
+    try {
+      if(language=="en")return;
+      Map<String,String> mp={"English":'en',"Hindi":'hi',"Arabic":"ar"};
+      Translation translation =
+      await translator.translate(textToTranslate, from: 'en', to: mp[language]!);
+      setState(() {
+        written_text = translation.text;
+      });
+    } catch (e) {
+      print('Translation error: $e');
     }
   }
 }
