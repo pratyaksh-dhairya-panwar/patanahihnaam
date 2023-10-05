@@ -306,7 +306,7 @@ class _SpeechScreenState extends State<SpeechScreen> {
   }
 
   void _listen() async {
-    if (_isListening) {
+    if (_isListening&&_speech.isNotListening) {
       bool available = await _speech.initialize(
         onStatus: (val) => {if(val.startsWith("done")){
           _listen()}},
